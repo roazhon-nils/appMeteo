@@ -1,14 +1,15 @@
 package com.example.sae4
 
-
-import android.location.Geocoder
+import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
-import android.widget.*
+import android.widget.ArrayAdapter
+import android.widget.ListView
+import android.widget.SeekBar
+import android.widget.TextView
 import androidx.annotation.RequiresApi
-import java.util.*
 
 class EventActivity : AppCompatActivity() {
 
@@ -16,7 +17,6 @@ class EventActivity : AppCompatActivity() {
     lateinit var radiusSeekBar : SeekBar
     lateinit var textRadius : TextView
     lateinit var listEvent : ListView
-    lateinit var homeActivity: ImageButton
     var res = mutableListOf<String>()
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -28,33 +28,12 @@ class EventActivity : AppCompatActivity() {
         radiusSeekBar = findViewById(R.id.radiusSeekBar)
         textRadius = findViewById(R.id.textRadius)
         listEvent = findViewById(R.id.listEvent)
-        homeActivity = findViewById(R.id.homeActivity)
 
-
-        homeActivity.setOnClickListener {
-            finish()
-        }
-
-        fun getCityName(latitude: Double, longitude: Double): String {
-            var cityName = ""
-            val geocoder = Geocoder(this, Locale.getDefault())
-            try {
-                val addresses = geocoder.getFromLocation(latitude, longitude, 1)
-                if (addresses!!.size != 0) {
-                    val address = addresses[0]
-                    cityName = address.locality
-                }
-            } catch (e: Exception) {
-                Log.e("Error", "Error getting city name: ${e.message}")
-            }
-            return cityName
-        }
 
 
         val latitude = intent.getStringExtra("latitude")!!.toDouble()
         val longitude = intent.getStringExtra("longitude")!!.toDouble()
-        var ville = getCityName(latitude,longitude)
-        titleEvent.setText(ville)
+        titleEvent.setText("$latitude $longitude")
 
         var request = RequestActivity(this, latitude,longitude,radiusSeekBar)
 
@@ -75,29 +54,21 @@ class EventActivity : AppCompatActivity() {
             }
 
             override fun onStopTrackingTouch(p0: SeekBar?) {
-                res = mutableListOf()
-                request.request(radiusSeekBar.progress+1)
+                request.request(radiusSeekBar.progress)
                 var adapter  = ArrayAdapter(this@EventActivity, android.R.layout.simple_list_item_1,res)
                 adapter.clear()
-
-                if (request.activityResponse != null) {
-                    for (i in 0..request.activityResponse!!.result.size - 1) {
-                        //println(request.activityResponse!!.features[i].properties.name)
-                        res += request.activityResponse!!.result[i].properties.name
-                    }
-
-                    listEvent.adapter = adapter
-
-                    //println("long ${request.activityResponse!!.result[0].properties.name}")
-                    //println(res.size)
+                for (i in 0 .. request.activityResponse!!.features.size-1){
+                    //println(request.activityResponse!!.features[i].properties.name)
+                    res += request.activityResponse!!.features[i].properties.name
                 }
+
+                listEvent.adapter = adapter
+
+                println("long ${request.activityResponse!!.features.size}")
+                println(res.size)
             }
         })
-
-
     }
-
-
 
 }
 

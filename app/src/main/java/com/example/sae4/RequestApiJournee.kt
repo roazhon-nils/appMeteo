@@ -15,16 +15,21 @@ import org.joda.time.format.DateTimeFormat
 
 
 @Serializable
-data class RootDaily (
-    val info : ForecastResponse
-)
-
-@Serializable
 data class DailyUnits(
     val time: String,
     val weathercode: String,
     val temperature_2m_max: String,
     val temperature_2m_min: String
+)
+
+@Serializable
+data class CurrentWeather(
+    val temperature: Double,
+    val windspeed: Double,
+    val winddirection: Double,
+    val weathercode: Int,
+    val is_day: Int,
+    val time: String
 )
 
 @Serializable
@@ -44,7 +49,7 @@ data class ForecastResponse(
     val timezone: String,
     val timezone_abbreviation: String,
     val elevation: Double,
-    //val current_weather: CurrentWeather,
+    val current_weather: CurrentWeather,
     val daily_units: DailyUnits,
     val daily: Daily
 )
@@ -56,7 +61,7 @@ class RequestApiJournee(val context: Context, position: Position) {
     var end_date : String
     private var timezone : String
     private var baseUrl : String
-    var dayResponse : RootDaily? = null
+    var dayResponse : ForecastResponse? = null
     var position : Position
 
     init {
@@ -66,7 +71,7 @@ class RequestApiJournee(val context: Context, position: Position) {
         start_date = formater.print(DateTime().plusDays(1))
         end_date = formater.print(DateTime().plusDays(4))
         timezone = "Europe%2FBerlin"
-        baseUrl = "http://10.0.2.2:8000/weather/daily?"
+        baseUrl = "https://api.open-meteo.com/v1/forecast?"
         this.position = position
     }
     fun requestDay(imageJ1 : ImageView,
@@ -80,14 +85,16 @@ class RequestApiJournee(val context: Context, position: Position) {
                    temperatureMinJ3: TextView
     ){
         val queueJournee = Volley.newRequestQueue(context)
-        var url = baseUrl+"latitude=$latitude&longitude=$longitude&start_date=$start_date&end_date=$end_date"
+        var url = baseUrl+"latitude=$latitude&longitude=$longitude&daily=weathercode,temperature_2m_max,temperature_2m_min&current_weather=true&start_date=$start_date&end_date=$end_date&timezone=Europe%2FBerlin"
+
+        println("journée $url")
 
         val stringRequest = StringRequest(
             Request.Method.GET, url,
             { response ->
                 // Gérer la réponse de la requête ici
 
-                dayResponse = Json.decodeFromString<RootDaily>(response)
+                dayResponse = Json.decodeFromString<ForecastResponse>(response)
                 Log.d("API response", dayResponse.toString())
 
                 setDonne(imageJ1,imageJ2,imageJ3,temperatureMaxJ1,temperatureMinJ1,temperatureMaxJ2,temperatureMinJ2,temperatureMaxJ3,temperatureMinJ3)
@@ -113,7 +120,7 @@ class RequestApiJournee(val context: Context, position: Position) {
     ){
         var image = arrayOf(imageJ1,imageJ2,imageJ3)
         for (i in 0..2){
-            when (dayResponse!!.info.daily.weathercode[i]) {
+            when (dayResponse!!.daily.weathercode[i]) {
                 0 -> image[i].setImageResource(R.drawable.soleil)
                 1, 2, 3 -> image[i].setImageResource(R.drawable.soleil_nuage)
                 45, 48 -> image[i].setImageResource(R.drawable.brouillard)
@@ -129,10 +136,10 @@ class RequestApiJournee(val context: Context, position: Position) {
         var temperatureMax = arrayOf(temperatureMaxJ1,temperatureMaxJ2,temperatureMaxJ3)
         var temperatureMin = arrayOf(temperatureMinJ1,temperatureMinJ2,temperatureMinJ3)
         for (i in 0..2){
-            temperatureMax[i].setText("${dayResponse!!.info.daily.temperature_2m_max[i].toString()} °C")
+            temperatureMax[i].setText("${dayResponse!!.daily.temperature_2m_max[i].toString()} °C")
         }
         for (i in 0..2){
-            temperatureMin[i].setText("${dayResponse!!.info.daily.temperature_2m_min[i].toString()} °C")
+            temperatureMin[i].setText("${dayResponse!!.daily.temperature_2m_min[i].toString()} °C")
         }
     }
 

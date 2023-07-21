@@ -36,9 +36,6 @@ class MainActivity : AppCompatActivity() {
     lateinit var request : RequestApi
     lateinit var requestDay : RequestApiJournee
 
-    lateinit var createLogin : Button
-    lateinit var loginButton : Button
-
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
 
 
@@ -66,8 +63,6 @@ class MainActivity : AppCompatActivity() {
         temperatureMinj2 = findViewById(R.id.temperatureMinJ2)
         temperatureMaxj3 = findViewById(R.id.temperatureMaxJ3)
         temperatureMinj3 = findViewById(R.id.temperatureMinJ3)
-        createLogin = findViewById(R.id.createLogin)
-        loginButton = findViewById(R.id.loginButton)
 
 
         println("Premier print")
@@ -89,23 +84,28 @@ class MainActivity : AppCompatActivity() {
             temperatureMinj3)
         request = RequestApi(this@MainActivity,position)
         request.request(imageMeteo,temperature,windParHour)
-
         requestDay = RequestApiJournee(this@MainActivity,position)
         requestDay.requestDay(imageJ1,imageJ2,imageJ3,temperatureMaxj1,temperatureMinj1,temperatureMaxj2,temperatureMinj2,temperatureMaxj3,temperatureMinj3)
         position.setRequestApi(request,requestDay)
+
+
+        //println("SALUT ${requestDay.dayResponse!!.daily.weathercode[0]}")
+        //ça c'est qui fait crash
+
+
+        println("Salut")
 
 
         val barreHeure = findViewById<SeekBar>(R.id.seekBar)
         barreHeure.min = 0
         barreHeure.max = 23
 
-
         barreHeure.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(p0: SeekBar?, progress: Int, p2: Boolean) {
-                println("request${request.RootHourly!!.info.hourly.weathercode[0]}")
                 textHour.setText("${barreHeure.progress.toString()} h")
                 //println("position $progress")
-                when (request.RootHourly!!.info.hourly.weathercode[progress]) {
+                //println(request.hourlyResponse!!.hourly.weathercode[progress])
+                when (request.hourlyResponse!!.hourly.weathercode[progress]) {
                     0 -> imageMeteo.setImageResource(R.drawable.soleil)
                     1, 2, 3 -> imageMeteo.setImageResource(R.drawable.soleil_nuage)
                     45, 48 -> imageMeteo.setImageResource(R.drawable.brouillard)
@@ -117,8 +117,8 @@ class MainActivity : AppCompatActivity() {
                     95 -> imageMeteo.setImageResource(R.drawable.orage)
                     96,99 -> imageMeteo.setImageResource(R.drawable.gros_orage)
                 }
-                windParHour.setText("${request.RootHourly!!.info.hourly.windspeed_10m[progress].toString()} km/h")
-                temperature.setText("${request.RootHourly!!.info.hourly.temperature_2m[progress]} °C")
+                windParHour.setText("${request.hourlyResponse!!.hourly.windspeed_10m[progress].toString()} km/h")
+                temperature.setText("${request.hourlyResponse!!.hourly.temperature_2m[progress]} °C")
             }
 
             override fun onStartTrackingTouch(p0: SeekBar?) {
@@ -131,22 +131,10 @@ class MainActivity : AppCompatActivity() {
         })
 
         bouttonCarte.setOnClickListener{
-            val intent1 = Intent(this,EventActivity::class.java)
-            println(position.latitude.toString())
-            println(position.longitude.toString())
-            intent1.putExtra("latitude",position.latitude.toString())
-            intent1.putExtra("longitude",position.longitude.toString())
-            startActivity(intent1)
-        }
-
-        createLogin.setOnClickListener {
-            val intent2 = Intent(this,CreationActivity::class.java)
-            startActivity(intent2)
-        }
-
-        loginButton.setOnClickListener {
-            val intent3 = Intent(this,LoginActivity::class.java)
-            startActivity(intent3)
+            val intent = Intent(this,EventActivity::class.java)
+            intent.putExtra("latitude",position.latitude.toString())
+            intent.putExtra("longitude",position.longitude.toString())
+            startActivity(intent)
         }
     }
 

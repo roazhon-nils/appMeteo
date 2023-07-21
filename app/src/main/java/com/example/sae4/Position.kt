@@ -101,17 +101,12 @@ class Position(private val context: Context, nomVille : TextView, bouttonPositio
 
         bouttonRecherche.setOnClickListener {
             var villeRecherche = rechercheEdit.text
-            println(villeRecherche.toString())
-            request!!.requestLocCity(villeRecherche.toString())
-            println("${request!!.getLatitude()},${request!!.getLongitude()}")
-            this.latitude = request!!.getLatitude()
-            this.longitude = request!!.getLongitude()
-            if (true) {
-                println("truc")
+            val co = getLatLngFromCityName(context,villeRecherche.toString())
+            if (co != null) {
                 nomVille.setText(villeRecherche)
-                request!!.setNewLocalisation(request!!.getLatitude(), request!!.getLongitude())
+                request!!.setNewLocalisation(this.latitude, this.longitude)
                 request!!.request(imageMeteo, temperature, windParHour)
-                requestApiday!!.setNewLocalisation(request!!.getLatitude(), request!!.getLongitude())
+                requestApiday!!.setNewLocalisation(this.latitude,this.longitude)
                 requestApiday!!.requestDay(imageJ1, imageJ2, imageJ3, temperatureMaxJ1, temperatureMinJ1, temperatureMaxJ2, temperatureMinJ2, temperatureMaxJ3, temperatureMinJ3)
             } else {
                 Toast.makeText(context,"Nom de ville invalide",Toast.LENGTH_SHORT)

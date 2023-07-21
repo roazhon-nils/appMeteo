@@ -20,34 +20,33 @@ import kotlin.math.sin
 
 @Serializable
 data class ActivityResponse (
-    val result: Array<Result>
-    )
+    val type: String,
+    val features: Array<Feature>
+)
 
 @Serializable
-data class Result (
-    val id: Int,
-    val longitude: Double,
-    val latitude: Double,
+data class Feature (
+    val type: String,
+    val id: String,
+    val geometry: Geometry,
     val properties: Properties
 )
 
-
+@Serializable
+data class Geometry (
+    val type: String,
+    val coordinates: Array<Double>
+)
 
 @Serializable
 data class Properties (
-    val preview: String,
     val xid: String,
-    val rate: Double,
     val name: String,
-    val kinds: String,
-    val wikipedia: String,
-    val wikidata: String,
-    val url: String? = null,
-    val stars: Int? = null,
-    val lat_max: Double? = null,
-    val lat_min: Double? = null,
-    val lon_max: Double? = null,
-    val lon_min: Double? = null
+    val dist: Double, //pas renvoyer par notre api
+    val rate: Int,
+    val osm : String? = null,
+    val wikidata: String? = null,
+    val kinds: String
 )
 
 data class Coordinates(val latitude: Double, val longitude: Double)
@@ -60,7 +59,7 @@ class RequestActivity(val context: Context,latitudeCentre : Double, longitudeCen
     var activityResponse : ActivityResponse? = null
     var radiusSeekBar : SeekBar
     init {
-        this.baseUrl = "http://10.0.2.2:8000/features/inRange?"
+        this.baseUrl = "http://api.opentripmap.com/0.1/en/places/radius?"
         this.apiKey = "5ae2e3f221c38a28845f05b6e046a8b66c60cb7f71565bbfba663fe0"
         this.latitudeCentre = latitudeCentre
         this.longitudeCentre = longitudeCentre
@@ -70,7 +69,7 @@ class RequestActivity(val context: Context,latitudeCentre : Double, longitudeCen
     fun request(dist : Int){
         val queue = Volley.newRequestQueue(context)
 
-        val url = baseUrl+"longitude=$longitudeCentre&latitude=$latitudeCentre&range=${dist*1000}"
+        val url = baseUrl+"radius=${dist * 1000}&lon=${longitudeCentre}&lat=${latitudeCentre}&format=geojson&apikey=$apiKey"
 
         val stringRequest = StringRequest(
             Request.Method.GET, url,
@@ -85,7 +84,6 @@ class RequestActivity(val context: Context,latitudeCentre : Double, longitudeCen
                 Log.e("API Error", error.toString())
             })
         queue.add(stringRequest)
-        queue.start()
     }
 
 

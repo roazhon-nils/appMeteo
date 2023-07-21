@@ -1,13 +1,10 @@
 package com.example.sae4
 
 import android.content.Context
-import android.provider.DocumentsContract.Root
 import android.util.Log
-import android.util.Pair
 import android.widget.ImageView
 import android.widget.TextView
 import com.android.volley.Request
-import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import kotlinx.serialization.Serializable
@@ -15,12 +12,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
-
-@Serializable
-data class RootHourly (
-    val info : HourlyResponse
-    )
-
 
 @Serializable
 data class HourlyResponse(
@@ -50,14 +41,6 @@ data class HourlyUnits(
     val weathercode: String,
     val windspeed_10m: String,
 )
-
-@Serializable
-data class Loc(
-    val name: String,
-    val latitude: Double,
-    val longitude: Double
-)
-
 class RequestApi(val context: Context,position: Position) {
     private var latitude : Double
     private var longitude : Double
@@ -65,7 +48,7 @@ class RequestApi(val context: Context,position: Position) {
     var end_date : String
     private var timezone : String
     private var baseUrl : String
-    var RootHourly : RootHourly? = null
+    var hourlyResponse : HourlyResponse? = null
     var position : Position
 
     init {
@@ -75,19 +58,20 @@ class RequestApi(val context: Context,position: Position) {
         start_date = formater.print(DateTime())
         end_date = formater.print(DateTime().plusDays(4))
         timezone = "Europe%2FBerlin"
-        baseUrl = "http://10.0.2.2:8000/weather/hourly?"
+        baseUrl = "https://api.open-meteo.com/v1/forecast?"
         this.position = position
     }
 
     fun request(imageMeteo : ImageView,temperature: TextView,windParHour: TextView){
         val queue = Volley.newRequestQueue(context)
-        var url = baseUrl+"latitude=$latitude&longitude=$longitude&start_date=$start_date&end_date=$start_date"
+        var url = baseUrl+"latitude=$latitude&longitude=$longitude&hourly=temperature_2m,weathercode,windspeed_10m&start_date=$start_date&end_date=$end_date"
 
+        println(url)
         val stringRequest = StringRequest(
             Request.Method.GET, url,
             { response ->
                 // Gérer la réponse de la requête ici
-                RootHourly = Json.decodeFromString<RootHourly>(response)
+                hourlyResponse = Json.decodeFromString<HourlyResponse>(response)
                 //Log.d("API response", hourlyResponse.toString())
                 setDonnee(imageMeteo, temperature, windParHour,0)
             },
@@ -98,30 +82,8 @@ class RequestApi(val context: Context,position: Position) {
         queue.add(stringRequest)
     }
 
-    fun requestLocCity(city: String) {
-        val queue = Volley.newRequestQueue(context)
-        val url = "http://10.0.2.2:8000/cities/search?query=$city"
-        //var tabLoc : Loc? = null
-        val stringRequest = StringRequest(
-            Request.Method.GET, url,
-            { response ->
-                // Gérer la réponse de la requête ici
-                var tabResponse = response.split("}")[0].toString()
-                tabResponse = tabResponse.subSequence(1,tabResponse.length).toString() + "}"
-                val tabLoc = Json.decodeFromString<Loc>(tabResponse)
-                setNewLocalisation(tabLoc.latitude,tabLoc.longitude)
-                //Log.d("API response", tabLoc.toString())
-            },
-            { error ->
-                // Gérer les erreurs de la requête ici
-                Log.e("API Error", error.toString())
-            })
-
-        queue.add(stringRequest)
-    }
-
     fun setDonnee(imageMeteo : ImageView,temperature: TextView,windParHour: TextView,heure: Int){
-        when (RootHourly!!.info.hourly.weathercode[heure]) {
+        when (hourlyResponse!!.hourly.weathercode[heure]) {
             0 -> imageMeteo.setImageResource(R.drawable.soleil)
             1, 2, 3 -> imageMeteo.setImageResource(R.drawable.soleil_nuage)
             45, 48 -> imageMeteo.setImageResource(R.drawable.brouillard)
@@ -133,8 +95,8 @@ class RequestApi(val context: Context,position: Position) {
             95 -> imageMeteo.setImageResource(R.drawable.orage)
             96,99 -> imageMeteo.setImageResource(R.drawable.gros_orage)
         }
-        temperature.setText("${RootHourly!!.info.hourly.weathercode[heure]} °C")
-        windParHour.setText("${RootHourly!!.info.hourly.weathercode[heure]} km/h")
+        temperature.setText("${hourlyResponse!!.hourly.temperature_2m[heure]} °C")
+        windParHour.setText("${hourlyResponse!!.hourly.windspeed_10m[heure].toString()} km/h")
     }
 
     fun setLongitude(new : Double){
@@ -157,13 +119,5 @@ class RequestApi(val context: Context,position: Position) {
         this.latitude = latitude
         this.longitude = longitude
         println("set new localisation")
-    }
-
-    fun getLatitude() : Double {
-        return this.latitude
-    }
-
-    fun getLongitude() : Double {
-        return this.longitude
     }
 }
